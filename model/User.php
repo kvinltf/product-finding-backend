@@ -137,5 +137,9 @@ class User
             " | Created On: " . $this->getCreatedOn();
     }
 
+    public function toJson()
+    {
+        return get_object_vars($this);
+    }
 
 }
