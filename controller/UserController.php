@@ -2,121 +2,185 @@
 /**
  * This class is to control CRUD of User Class
  */
+require_once 'BaseController.php';
 
-class UserController
+class UserController extends BaseController
 {
-
-    private static $tableName = "user";
-
-    /**
-     * Insert new user into Database
-     * @param User $user
-     * @param mysqli $conn
-     * @return string empty string on success or error message on fail
-     */
-    public static function create(User $user, mysqli $conn)
+    public function __construct(mysqli $conn, string $table_name = 'user')
     {
-        $result = '';
-        $sql = 'INSERT INTO `user`(`name`, `email`, `password`) VALUES (?,?,?)';
+        parent::__construct($conn, $table_name);
+    }
 
-        $stmt = $conn->prepare($sql);
-        if (!$stmt)
-            $result = 'Prepare Statement Fail: ' . $conn->error;
-        else {
-            $stmt->bind_param(
-                'sss',
-                $user->getName(), $user->getEmail(), $user->getPassword());
-            if (!$stmt->execute())
-                $result = "Statement Execute Fail: " . $stmt->error . PHP_EOL;
+    public function createNew($user)
+    {
+
+        $name = $user->getName();
+        $email = $user->getEmail();
+        $password = $user->getPassword();
+
+        $sql = 'INSERT INTO user (`name`, `email`, `password`) VALUES (?,?,?)';
+
+        if ($stmt = $this->conn->prepare($sql)) {
+
+            try {
+                if ($stmt->bind_param('sss', $name, $email, $password)) {
+                    if ($stmt->execute()) {
+                        if ($this->conn->errno == 0)
+                            $this->responseObject->setStatusSuccessWithMessage("Success Create User");
+                        else {
+                            $this->responseObject->setErrorMessage($this->conn->error);
+                            $this->responseObject->setStatusFail($this->conn->error);
+                        }
+                    } else {
+                        $this->responseObject->setStatusFailWithMessage(ResponseObject::FAIL_EXECUTES_QUERY);
+                        $this->responseObject->setErrorMessage($stmt->error);
+                    }
+                } else {
+                    $this->responseObject->setStatusFailWithMessage(ResponseObject::FAIL_STMT_BIND_PARAM);
+                    $this->responseObject->setErrorMessage($stmt->error);
+                }
+            } catch (Exception $e) {
+                $this->responseObject->setStatusFailWithMessage(ResponseObject::FAIL_EXCEPTION);
+                $this->responseObject->setErrorMessage($e->getMessage());
+                return $this->responseObject;
+            } finally {
+                $stmt->close();
+            }
+
+        } else {
+            $this->responseObject->setStatusFailWithMessage(ResponseObject::FAIL_PREPARE_STMT);
+            $this->responseObject->setErrorMessage($this->conn->error);
         }
-        $stmt->close();
-        return $result;
+        return $this->responseObject;
     }
 
-    public static function fetchByEmailAndPassword(string $email, string $password, mysqli $conn)
+    public function retrieveByEmailAndPassword($email, $password)
     {
-        $result = '';
-        $sql = 'SELECT * FROM `user` WHERE `user`.`email` =? AND `user`.`password` = ?';
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param('ss', $email, $password);
-        $stmt->execute();
-        $result = $stmt->get_result()->fetch_assoc();
+        try {
+            $sql = 'SELECT * FROM `user` WHERE `user`.`email` =? AND `user`.`password` = ?';
 
-        $stmt->close();
-        return $result;
+            if ($stmt = $this->conn->prepare($sql)) {
+
+                if ($stmt->bind_param('ss', $email, $password)) {
+                    if ($stmt->execute()) {
+                        if ($result = $stmt->get_result()->fetch_assoc()) {
+                            $this->responseObject->setQueryResult($result);
+                            $this->responseObject->setStatusSuccessWithMessage("Success Fetch User");
+                        } else {
+                            $this->responseObject->setStatusFailWithMessage("No User Found");
+                        }
+
+                    } else {
+                        $this->responseObject->setStatusFailWithMessage(ResponseObject::FAIL_EXECUTES_QUERY);
+                        $this->responseObject->setErrorMessage($stmt->error);
+                    }
+
+                } else {
+                    $this->responseObject->setStatusFailWithMessage(ResponseObject::FAIL_STMT_BIND_PARAM);
+                    $this->responseObject->setErrorMessage($stmt->error);
+                }
+            } else {
+                $this->responseObject->setStatusFailWithMessage(ResponseObject::FAIL_PREPARE_STMT);
+                $this->responseObject->setErrorMessage($this->conn->error);
+            }
+        } catch (Exception $e) {
+            $this->responseObject->setStatusFailWithMessage(ResponseObject::FAIL_EXCEPTION);
+            $this->responseObject->setErrorMessage($e->getMessage());
+            return $this->responseObject;
+        } finally {
+            $stmt->close();
+        }
+        return $this->responseObject;
     }
 
-
-    /**
-     * @param string $email
-     * @param mysqli $conn
-     * @return bool|User
-     * <p>return FALSE if user not found,</p>
-     *
-     * <p>return User information on Success</p>
-     */
-    public static function fetchByEmail(string $email, mysqli $conn)
+    public function retrieveAll()
     {
-        $sql = 'SELECT * FROM `user` WHERE `user`.`email` =?';
-        $stmt = $conn->prepare($sql);
+        $sql = 'SELECT * FROM ' . $this->table_name;
+
+        try {
+            if ($stmt = $this->conn->prepare($sql)) {
+                if ($stmt->execute()) {
+                    $stmtResult = $stmt->get_result();
+                    while ($resultAssoc = $stmtResult->fetch_assoc()) {
+                        $userLists[] = $resultAssoc;
+                    }
+                    $this->responseObject->setStatusSuccess();
+                    $this->responseObject->setQueryResult($userLists);
+                } else {
+                    $this->responseObject->setStatusFailWithMessage(ResponseObject::FAIL_EXECUTES_QUERY);
+                    $this->responseObject->setErrorMessage($stmt->error);
+                }
+            } else {
+                $this->responseObject->setStatusFailWithMessage(ResponseObject::FAIL_PREPARE_STMT);
+                $this->responseObject->setErrorMessage($this->conn->error);
+
+            }
+        } catch (Exception $e) {
+            $this->responseObject->setStatusFailWithMessage(ResponseObject::FAIL_EXCEPTION);
+            $this->responseObject->setErrorMessage($e->getMessage());
+            return $this->responseObject;
+        } finally {
+            $stmt->close();
+        }
+
+        return $this->responseObject;
+    }
+
+    public function retrieveByEmail(string $email)
+    {
+        $sql = 'SELECT * FROM ' . $this->table_name . ' WHERE user.`email` =?';
+
+        $stmt = $this->conn->prepare($sql);
         $stmt->bind_param('s', $email);
-
-        if ($stmt->execute()) {
-            $re = $stmt->get_result()->fetch_assoc();
-            if (isset($re))
-                $result = User::fromDatabase($re['id'], $re['name'], $re['email'], $re['password'], $re['created_on']);
-            else $result = false;
-        } else $result = false;
-
-        $stmt->close();
-        return $result;
-    }
-
-    /**
-     * @param string $email
-     * @param string $password
-     * @param mysqli $conn
-     * @return bool|string
-     * <p> return TRUE on Success, FALSE on Failure</p>
-     * <p> mysqli Error Message on Error</p>
-     */
-    public static function updatePassword(string $email, string $password, mysqli $conn)
-    {
-        $sql = 'UPDATE `user` SET password = ? WHERE email = ?';
-        if ($stmt = $conn->prepare($sql)) {
-            $stmt->bind_param('ss', $password, $email);
-            $result = $stmt->execute();
-        } else $result = $conn->error;
-
-        return $result;
-    }
-
-    public static function fetchAll(mysqli $conn)
-    {
-        $sql = 'SELECT * FROM ' . self::$tableName;
-        $stmt = $conn->prepare($sql);
         $stmt->execute();
+        $stmtResult = $stmt->get_result()->fetch_assoc();
 
-        $getResult = $stmt->get_result();
-        $stmt->close();
-
-        $allUsers = array();
-
-        while ($re = $getResult->fetch_assoc()) {
-            $allUsers[] = User::fromDatabase($re['id'], $re['name'], $re['email'], $re['password'], $re['created_on']);
+        if ($this->conn->errno == 0) {
+            if (isset($stmtResult)) {
+                $this->responseObject->setStatusSuccess();
+                $this->responseObject->setQueryResult($stmtResult);
+            } else {
+                $this->responseObject->setStatusFailWithMessage(ResponseObject::NO_RESULT);
+            }
+        } else {
+            $this->responseObject->setStatusFail();
+            $this->responseObject->setErrorMessage($this->conn->error);
+            $this->responseObject->setMessage("Error Number: " . $this->conn->errno);
+            $this->responseObject->setQueryResult($stmtResult);
         }
 
-        return $allUsers;
+        $stmt->close();
+        return $this->responseObject;
     }
 
-    public function update()
+    public function updatePasswordByEmail(string $email, string $password)
     {
-        // TODO: Implement update() method.
+        $sql = '';
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param('ss', $password, $email);
+        if ($stmt->execute()) {
+            if ($this->conn->errno == 0) {
+                $this->responseObject->setStatusSuccessWithMessage("Success Change Password\nPlease Check Your Email");
+            } else {
+                $this->responseObject->setErrorMessage($this->conn->error);
+                $this->responseObject->setStatusFailWithMessage("Error Occur");
+            }
+            $stmt->close();
+        } else {
+            $this->responseObject->setStatusFailWithMessage($this->conn->error);
+        }
+        return $this->responseObject;
     }
 
-    public function delete()
+    public function updateById($user, $id)
     {
-        // TODO: Implement delete() method.
+        // TODO: Implement updateById() method.
     }
+
+    public function deleteById($id)
+    {
+        // TODO: Implement deleteById() method.
+    }
+
 
 }

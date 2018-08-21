@@ -51,3 +51,5 @@ Class Database
         return $conn;
     }
 }
+
+$conn = Database::getConnection();

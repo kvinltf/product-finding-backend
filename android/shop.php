@@ -7,33 +7,23 @@
  */
 
 
-require_once('../Database.php');
+require_once('../initialize.php');
 require_once('../model/Shop.php');
 require_once('../controller/ShopController.php');
 
-$conn = Database::getConnection();
-$data = json_decode(file_get_contents("php://input"));
 $action = $data->action;
+$responseObject = new ResponseObject();
+$shopController = new ShopController($conn);
 
 switch ($action) {
-    case 'fetchall':
-        if ($shopList = ShopController::fetchAll($conn)) {
-            $result["status"] = 'SUCCESS';
-            foreach ($shopList as $shop) {
-                $shopJson[] = ($shop->toJson());
-            }
-            $result['result'] = $shopJson;
-        } else {
-            $result["status"] = 'FAIL';
-            $result['result'] = 'Fail Retrive Result';
-        }
-        echo json_encode($result);
+    case ShopController::ACTION_FETCH_ALL:
+        $responseObject = $shopController->retrieveAll();
+        echo $responseObject->toJsonResponse();
         break;
     default:
-        $result["status"] = 'FAIL';
-        $result['result'] = '';
-        $result['data'] = $data;
-        $result['action'] = $action;
-        echo json_encode($result);
+        $responseObject->setStatusFail();
+        $responseObject->setMessage("No Action Match");
+        echo $responseObject->toJsonResponse();
         break;
+
 }

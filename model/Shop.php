@@ -146,7 +146,7 @@ class Shop
             " | Created On: " . $this->getCreatedOn();
     }
 
-    public function toJson()
+    public function toArray()
     {
         return get_object_vars($this);
     }
