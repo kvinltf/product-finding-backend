@@ -8,10 +8,11 @@
 
 class Shop
 {
+
     private $id;
     private $name;
-    private $lat;
-    private $lng;
+    private $latitude;
+    private $longitude;
     private $description;
     private $created_on;
 
@@ -25,8 +26,8 @@ class Shop
     public function __construct($name, $lat, $lng, $description)
     {
         $this->name = $name;
-        $this->lat = $lat;
-        $this->lng = $lng;
+        $this->latitude = $lat;
+        $this->longitude = $lng;
         $this->description = $description;
     }
 
@@ -73,33 +74,33 @@ class Shop
     /**
      * @return mixed
      */
-    public function getLat()
+    public function getLatitude()
     {
-        return $this->lat;
+        return $this->latitude;
     }
 
     /**
-     * @param mixed $lat
+     * @param mixed $latitude
      */
-    public function setLat($lat): void
+    public function setLatitude($latitude): void
     {
-        $this->lat = $lat;
+        $this->latitude = $latitude;
     }
 
     /**
      * @return mixed
      */
-    public function getLng()
+    public function getLongitude()
     {
-        return $this->lng;
+        return $this->longitude;
     }
 
     /**
-     * @param mixed $lng
+     * @param mixed $longitude
      */
-    public function setLng($lng): void
+    public function setLongitude($longitude): void
     {
-        $this->lng = $lng;
+        $this->longitude = $longitude;
     }
 
     /**
@@ -140,8 +141,8 @@ class Shop
         return
             "ID: " . $this->getId() .
             " | Name: " . $this->getName() .
-            " | Lat: " . $this->getLat() .
-            " | Lng: " . $this->getLng() .
+            " | Lat: " . $this->getLatitude() .
+            " | Lng: " . $this->getLongitude() .
             " | Description: " . $this->getDescription() .
             " | Created On: " . $this->getCreatedOn();
     }
