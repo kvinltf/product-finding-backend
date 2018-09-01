@@ -17,7 +17,6 @@ class ShopOwnerController extends BaseController
 
     public function createNew($owner_shop)
     {
-        // TODO: Implement createNew() method.
         try {
             $sql = "INSERT INTO shop_owner VALUES(?,?)";
             $stmt = $this->conn->prepare($sql);

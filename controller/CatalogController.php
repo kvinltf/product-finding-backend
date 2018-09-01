@@ -6,9 +6,12 @@
  * Time: 5:14 PM
  */
 
-require_once dirname(__FILE__).'/../model/Catalog.php';
-require_once dirname(__FILE__).'/../model/ResponseObject.php';
-require_once dirname(__FILE__).'/BaseController.php';
+require_once dirname(__FILE__) . '/../model/Catalog.php';
+require_once dirname(__FILE__) . '/../model/Category.php';
+require_once dirname(__FILE__) . '/../model/Brand.php';
+
+require_once dirname(__FILE__) . '/../model/ResponseObject.php';
+require_once dirname(__FILE__) . '/BaseController.php';
 
 class CatalogController extends BaseController
 {
@@ -19,7 +22,7 @@ class CatalogController extends BaseController
      */
     public function __construct(mysqli $conn, string $table_name = "shop_catalog")
     {
-        parent::__construct($conn,$table_name);
+        parent::__construct($conn, $table_name);
     }
 
     public static function fetchAll(mysqli $conn, string $userSearch)
@@ -115,16 +118,43 @@ WHERE s.name LIKE ?
         return $responseObject;
     }
 
-    public function createNew($param)
+    public function createNew($catalog): ResponseObject
     {
         // TODO: Implement createNew() method.
+
+        try {
+            $sql = "INSERT INTO product_finding.shop_catalog (shop_id, item_id) VALUES (?, ?)";
+            $stmt = $this->conn->prepare($sql);
+
+            foreach ($catalog["item_id_list"] as $itemId) {
+                $stmt->bind_param('ii', $catalog['shop_id'], $itemId);
+                $stmt->execute();
+            }
+
+            if ($this->conn->errno == 0) {
+                $this->responseObject->setStatusSuccessWithMessage("Success Add Catalog to Shop");
+
+            } else {
+                $this->responseObject->setStatusFailWithMessage($this->conn->error);
+                $this->responseObject->setErrorMessage($this->conn->error);
+            }
+
+        } catch (Exception $e) {
+            $this->responseObject->setStatusFailWithMessage(ResponseObject::FAIL_EXCEPTION);
+            $this->responseObject->setErrorMessage($e->getMessage());
+        }
+        $stmt->close();
+        return $this->responseObject;
     }
+
 
     public function retrieveAll()
     {
         // TODO: Implement retrieveAll() method.
     }
-    public function retrieveByUserSearch(string $user_search){
+
+    public function retrieveByUserSearch(string $user_search)
+    {
         $sql = 'SELECT 
       s.id          shop_id,
        s.name        shop_name,
@@ -224,5 +254,83 @@ WHERE s.name LIKE ?
     public function deleteById($id)
     {
         // TODO: Implement deleteById() method.
+    }
+
+    public function retrieveItemListByShopId(string $shop_id, bool $isShopOwnedItem)
+    {
+
+        if ($isShopOwnedItem) {
+            $sql = "
+SELECT i.id item_id,
+       i.name item_name,
+       i.description item_desc,
+       b.id brand_id,
+       b.name brand_name,
+       b.description brand_desc,
+       c.id cat_id,
+       c.name cat_name,
+       is_deleted cat_isdelete,
+       parent_id cat_parent_id
+FROM item i
+JOIN brand b on i.brand_id = b.id
+JOIN category c on i.category_id = c.id
+WHERE i.id
+        IN (SELECT sc.item_id FROM shop_catalog sc
+                               JOIN shop s on sc.shop_id = s.id WHERE s.id = ?)";
+        } else {
+            $sql = "
+SELECT i.id item_id,
+       i.name item_name,
+       i.description item_desc,
+       b.id brand_id,
+       b.name brand_name,
+       b.description brand_desc,
+       c.id cat_id,
+       c.name cat_name,
+       is_deleted cat_isdelete,
+       parent_id cat_parent_id
+FROM item i
+JOIN brand b on i.brand_id = b.id
+JOIN category c on i.category_id = c.id
+WHERE i.id
+        NOT IN (SELECT sc.item_id FROM shop_catalog sc
+                               JOIN shop s on sc.shop_id = s.id WHERE s.id = ?)";
+        }
+
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("i", $shop_id);
+        $stmt->execute();
+
+
+        if ($this->conn->errno == 0) {
+
+            $stmtResult = $stmt->get_result();
+
+            while ($assoc_result = $stmtResult->fetch_assoc()) {
+
+                $category['id'] = utf8_encode($assoc_result['cat_id']);
+                $category['name'] = utf8_encode($assoc_result['cat_name']);
+
+                $brand ['id'] = utf8_encode($assoc_result['brand_id']);
+                $brand ['name'] = utf8_encode($assoc_result['brand_name']);
+                $brand ['description'] = utf8_encode($assoc_result['brand_desc']);
+
+                $item['id'] = utf8_encode($assoc_result['item_id']);
+                $item['name'] = utf8_encode($assoc_result['item_name']);
+                $item['description'] = utf8_encode($assoc_result['item_desc']);
+                $item['category'] = $category;
+                $item['brand'] = $brand;
+//                $item['isChecked'] = false;
+
+                $allItem[] = $item;
+            }
+            $this->responseObject->setStatusSuccessWithMessage("Success Retrieve Item List By Shop ID");
+            $this->responseObject->setQueryResult($allItem);
+        } else {
+            $this->responseObject->setStatusFailWithMessage($this->conn->error);
+        }
+        $stmt->close();
+        return $this->responseObject;
     }
 }
