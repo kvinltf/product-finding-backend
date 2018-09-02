@@ -12,16 +12,17 @@ require_once('../controller/CatalogController.php');
 
 const SEARCH_ALL = "searchall";
 
+$data = json_decode("{\"action\":\"searchall\",\"user_search\":\"mas\",\"search_condition\":[\"item_name\",\"item_desc\",\"shop_name\",\"shop_desc\",\"brand_name\",\"brand_desc\",\"category\"]}");
+
 $action = $data->action;
 $catalogController = new CatalogController($conn);
 $responseObject = new ResponseObject();
 
-//$action = "itemListNotInShop";
-
 switch ($action) {
     case SEARCH_ALL:
         $user_search = $data->user_search;
-        $responseObject = $catalogController->retrieveByUserSearch($user_search);
+        $search_condition = $data->search_condition;
+        $responseObject = $catalogController->retrieveByUserSearch($user_search, $search_condition);
         echo $responseObject->toJsonResponse();
         break;
     case 'itemListInShop':

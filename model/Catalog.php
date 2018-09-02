@@ -6,8 +6,8 @@
  * Time: 2:57 PM
  */
 
-require_once 'Shop.php';
-require_once 'Item.php';
+require_once (__DIR__) . "/Shop.php";
+require_once (__DIR__) . "/Item.php";
 
 class Catalog
 {

@@ -13,6 +13,15 @@ require_once dirname(__FILE__) . '/../model/Brand.php';
 require_once dirname(__FILE__) . '/../model/ResponseObject.php';
 require_once dirname(__FILE__) . '/BaseController.php';
 
+const  item_name = "item_name";
+const  item_desc = "item_desc";
+const  shop_name = "shop_name";
+const  shop_desc = "shop_desc";
+const  brand_name = "brand_name";
+const  brand_desc = "brand_desc";
+const  category = "category";
+
+
 class CatalogController extends BaseController
 {
     /**
@@ -153,8 +162,10 @@ WHERE s.name LIKE ?
         // TODO: Implement retrieveAll() method.
     }
 
-    public function retrieveByUserSearch(string $user_search)
+    public function retrieveByUserSearch(string $user_search, $search_condition)
     {
+
+
         $sql = 'SELECT 
       s.id          shop_id,
        s.name        shop_name,
@@ -176,9 +187,52 @@ FROM shop_catalog sc
        JOIN item i ON sc.item_id = i.id
        JOIN brand b ON i.brand_id = b.id
        JOIN category c on i.category_id = c.id
-WHERE s.name LIKE ?
+WHERE ';
+
+        /*s.name LIKE ?
+OR s.description LIKE ?
    OR i.name LIKE ?
-   OR b.name LIKE ?';
+   OR i.description LIKE ?
+   OR b.name LIKE ?
+   OR b.description LIKE ?
+   OR c.name LIKE ?*/
+
+        $appendCondition = '';
+        $userSearch = '\'%' . $user_search . '%\'';
+        $i = 0;
+        foreach ($search_condition as $condition) {
+            if ($i > 0) {
+                $appendCondition = $appendCondition . " OR ";
+            }
+            $i++;
+            if ($condition === item_name) {
+                $appendCondition = $appendCondition . " i.name LIKE " . $userSearch;
+            } elseif ($condition === item_desc) {
+                $appendCondition = $appendCondition . " i.description LIKE " . $userSearch;
+            } elseif ($condition === shop_name) {
+                $appendCondition = $appendCondition . " s.name LIKE " . $userSearch;
+            } elseif ($condition === shop_desc) {
+                $appendCondition = $appendCondition . " s.description LIKE" . $userSearch;
+            } elseif ($condition === brand_name) {
+                $appendCondition = $appendCondition . " b.name LIKE " . $userSearch;
+            } elseif ($condition === brand_desc) {
+                $appendCondition = $appendCondition . " b.description LIKE " . $userSearch;
+            } elseif ($condition === category) {
+                $appendCondition = $appendCondition . " c.name LIKE " . $userSearch;
+            }
+        }
+        if ($i == 0) {
+            $appendCondition =
+                "s.name LIKE " . $userSearch .
+                "OR s.description LIKE " . $userSearch .
+                "OR i.name LIKE " . $userSearch .
+                "OR i.description LIKE " . $userSearch .
+                "OR b.name LIKE " . $userSearch .
+                "OR b.description LIKE " . $userSearch .
+                "OR c.name LIKE " . $userSearch;
+        }
+
+        $sql = $sql . $appendCondition;
 
         $responseObject = new ResponseObject();
         if (!$this->conn) {
@@ -186,77 +240,81 @@ WHERE s.name LIKE ?
             $responseObject->setErrorMessage($this->conn->error);
             return $responseObject;
         } else {
-            try {
+
                 $stmt = $this->conn->prepare($sql);
                 if (!$stmt) {
                     $responseObject->setStatusFailWithMessage(ResponseObject::FAIL_PREPARE_STMT);
                     $responseObject->setErrorMessage($this->conn->error);
                     return $responseObject;
                 } else {
-                    $userSearch = '%' . $user_search . '%';
+                    /*$userSearch = '%' . $user_search . '%';
 
                     if (!$stmt->bind_param('sss', $userSearch, $userSearch, $userSearch)) {
                         $responseObject->setStatusFailWithMessage(ResponseObject::FAIL_STMT_BIND_PARAM);
                         $responseObject->setErrorMessage($stmt->error);
                         return $responseObject;
-                    } else {
-                        $stmt->execute();
-                        $stmtResult = $stmt->get_result();
-                        $stmt->close();
-                        $cat = array();
-                        $num = 0;
-                        while ($result = $stmtResult->fetch_assoc()) {
-                            ++$num;
+                    } else {*/
+                    $stmt->execute();
+                    $stmtResult = $stmt->get_result();
+                    $cat = array();
+                    $num = 0;
 
-                            $shop['id'] = utf8_encode($result['shop_id']);
-                            $shop['name'] = utf8_encode($result['shop_name']);
-                            $shop['description'] = utf8_encode($result['shop_description']);
-                            $shop['latitude'] = utf8_encode($result['shop_latitude']);
-                            $shop['longitude'] = utf8_encode($result['shop_longitude']);
-                            $shop['created_on'] = utf8_encode($result['shop_created_on']);
+                    while ($result = $stmtResult->fetch_assoc()) {
+                        ++$num;
 
-                            $category['id'] = utf8_encode($result['category_id']);
-                            $category['name'] = utf8_encode($result['category_name']);
+                        $shop['id'] = utf8_encode($result['shop_id']);
+                        $shop['name'] = utf8_encode($result['shop_name']);
+                        $shop['description'] = utf8_encode($result['shop_description']);
+                        $shop['latitude'] = utf8_encode($result['shop_latitude']);
+                        $shop['longitude'] = utf8_encode($result['shop_longitude']);
+                        $shop['created_on'] = utf8_encode($result['shop_created_on']);
 
-                            $brand ['id'] = utf8_encode($result['brand_id']);
-                            $brand ['name'] = utf8_encode($result['brand_name']);
-                            $brand ['description'] = utf8_encode($result['brand_description']);
+                        $category['id'] = utf8_encode($result['category_id']);
+                        $category['name'] = utf8_encode($result['category_name']);
 
-                            $item['id'] = utf8_encode($result['item_id']);
-                            $item['name'] = utf8_encode($result['item_name']);
-                            $item['description'] = utf8_encode($result['item_description']);
-                            $item['category'] = $category;
-                            $item['brand'] = $brand;
+                        $brand ['id'] = utf8_encode($result['brand_id']);
+                        $brand ['name'] = utf8_encode($result['brand_name']);
+                        $brand ['description'] = utf8_encode($result['brand_description']);
 
-                            $catalog['shop'] = $shop;
-                            $catalog['item'] = $item;
+                        $item['id'] = utf8_encode($result['item_id']);
+                        $item['name'] = utf8_encode($result['item_name']);
+                        $item['description'] = utf8_encode($result['item_description']);
+                        $item['category'] = $category;
+                        $item['brand'] = $brand;
 
-                            $c = new Catalog($shop, $item);
-                            $cat[] = $c->toArray();
-                        }
-                        $responseObject->setStatusSuccess();
-                        $responseObject->setMessageWithRetrieveCount($num);
-                        $responseObject->setQueryResult($cat);
+                        $catalog['shop'] = $shop;
+                        $catalog['item'] = $item;
+
+
+                        $c = new Catalog($shop, $item);
+
+                        $cat[] = $c->toArray();
+
                     }
+                    $responseObject->setStatusSuccess();
+                    $responseObject->setMessageWithRetrieveCount($num);
+                    $responseObject->setQueryResult($cat);
                 }
-            } finally {
-                $stmt->close();
-            }
+
+
         }
         return $responseObject;
     }
 
-    public function updateById($param, $id)
+    public
+    function updateById($param, $id)
     {
         // TODO: Implement updateById() method.
     }
 
-    public function deleteById($id)
+    public
+    function deleteById($id)
     {
         // TODO: Implement deleteById() method.
     }
 
-    public function retrieveItemListByShopId(string $shop_id, bool $isShopOwnedItem)
+    public
+    function retrieveItemListByShopId(string $shop_id, bool $isShopOwnedItem)
     {
 
         if ($isShopOwnedItem) {
