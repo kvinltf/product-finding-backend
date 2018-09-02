@@ -7,9 +7,10 @@
  */
 
 require_once('../initialize.php');
-require_once('../model/Shop.php');
-require_once('../controller/CatalogController.php');
 require_once('../model/ResponseObject.php');
+require_once('../controller/CatalogController.php');
+
+const SEARCH_ALL = "searchall";
 
 $action = $data->action;
 $catalogController = new CatalogController($conn);
@@ -18,7 +19,7 @@ $responseObject = new ResponseObject();
 //$action = "itemListNotInShop";
 
 switch ($action) {
-    case 'searchall':
+    case SEARCH_ALL:
         $user_search = $data->user_search;
         $responseObject = $catalogController->retrieveByUserSearch($user_search);
         echo $responseObject->toJsonResponse();
@@ -36,7 +37,7 @@ switch ($action) {
         break;
     case "saveItemToShopCatalog":
         $catalog["shop_id"] = $data->shop_id;
-        foreach ($data->item_id_list as $itemId){
+        foreach ($data->item_id_list as $itemId) {
             $itemIdList[] = $itemId;
         }
         $catalog["item_id_list"] = $itemIdList;

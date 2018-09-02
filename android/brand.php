@@ -7,12 +7,26 @@
  */
 
 include_once '../initialize.php';
-include_once '../model/Brand.php';
-include_once '../model/Category.php';
 include_once '../model/ResponseObject.php';
-include_once '../controller/CatalogController.php';
+require_once('../controller/BrandController.php');
 
-//$action = $data->action;
+const ADD_NEW_BRAND = "addNewBrand";
+const RETRIEVE_ALL_BRAND = "retrieveAllBrand";
 
-$responseObject = CatalogController::fetchAll($conn,'giant');
-echo $responseObject->toJsonResponse();
+$action = $data->action;
+$brandController = new BrandController($conn);
+$responseObject = new ResponseObject();
+
+switch ($action) {
+    case ADD_NEW_BRAND:
+        $newBrand["brand_name"] = $data->brand_name;
+        $newBrand["brand_desc"] = $data->brand_description;
+        $responseObject = $brandController->createNew($newBrand);
+        echo $responseObject->toJsonResponse();
+        break;
+    case RETRIEVE_ALL_BRAND:
+        $responseObject = $brandController->retrieveAll();
+        echo $responseObject->toJsonResponse();
+        break;
+}
+
