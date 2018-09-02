@@ -12,8 +12,6 @@ require_once('../controller/CatalogController.php');
 
 const SEARCH_ALL = "searchall";
 
-$data = json_decode("{\"action\":\"searchall\",\"user_search\":\"mas\",\"search_condition\":[\"item_name\",\"item_desc\",\"shop_name\",\"shop_desc\",\"brand_name\",\"brand_desc\",\"category\"]}");
-
 $action = $data->action;
 $catalogController = new CatalogController($conn);
 $responseObject = new ResponseObject();

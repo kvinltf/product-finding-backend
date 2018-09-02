@@ -22,7 +22,22 @@ class ShopController extends BaseController
     public
     function createNew($shop)
     {
-        // TODO: Implement createNew() method.
+        $sql = "INSERT INTO product_finding.shop (name, description, latitude, longitude) VALUES (?,?,?,?)";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("ssdd", $shop["shop_name"],
+            $shop["shop_desc"],
+            $shop["lat"],
+            $shop["lng"]);
+        $stmt->execute();
+
+        if ($this->conn->errno == 0) {
+            $this->responseObject->setStatusSuccessWithMessage("Success Create New Shop");
+        } else {
+            $this->responseObject->setStatusFailWithMessage($this->conn->error);
+        }
+        $stmt->close();
+        return $this->responseObject;
     }
 
     public
